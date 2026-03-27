@@ -2,761 +2,269 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>THE RAT RACE 🐀</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>THE RAT RACE 🐀 — On The Day</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  html, body { background-color: #141414 !important; color: #F0E6C8; }
   :root {
     --cheese: #F5C842;
     --cheese-dark: #D4A017;
-    --rat: #2a2a2a;
-    --sewer: #141414;
+    --black: #141414;
     --grime: #1e1e1e;
     --cream: #F0E6C8;
     --accent: #E84545;
     --muted: #888;
+    --border: #e8e8e8;
+    --bg2: #f8f8f6;
+    --bg3: #fffbeb;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:#fff; color:#111; font-family:'DM Sans',sans-serif; overflow-x:hidden; }
+
+  /* HEADER */
+  .site-header {
+    background:var(--black); border-bottom:3px solid var(--cheese);
+    padding:12px 20px; display:flex; align-items:center;
+    justify-content:space-between; gap:12px;
+    position:sticky; top:0; z-index:500;
+    box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  }
+  .hdr-left h1 { font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--cheese); letter-spacing:4px; line-height:1; }
+  .hdr-left p { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; color:#888; margin-top:2px; }
+  .gmaps-hdr {
+    background:var(--cheese); color:var(--black);
+    font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:2px;
+    padding:9px 16px; text-decoration:none; white-space:nowrap; flex-shrink:0;
+    clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: #141414 !important;
-    color: #F0E6C8;
-    font-family: 'DM Sans', sans-serif;
-    overflow-x: hidden;
-    cursor: none;
+  /* COUNTDOWN */
+  .countdown-bar {
+    background:#2e2e2e; padding:10px 20px;
+    display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;
   }
+  .cd-label { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:3px; color:#888; text-transform:uppercase; }
+  .cd-timer { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--cheese); letter-spacing:4px; }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:#444; animation:pulse 2s ease infinite; display:inline-block; margin-right:5px; }
+  .status-dot.active { background:#44ff88; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+  .race-status { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; color:#888; display:flex; align-items:center; }
 
-  /* Custom cursor */
-  .cursor {
-    font-size: 22px;
-    position: fixed;
-    top: 0; left: 0;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    transition: transform 0.08s ease;
-    line-height: 1;
-    user-select: none;
-  }
+  /* MARQUEE */
+  .marquee-wrap { overflow:hidden; background:var(--cheese); padding:12px 0; white-space:nowrap; }
+  .marquee-inner { display:inline-block; animation:marquee 22s linear infinite; }
+  .marquee-inner span { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:5px; color:var(--black); margin-right:56px; }
+  @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
-  /* Noise texture overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 1000;
-    opacity: 0.4;
-  }
-
-  /* ---- HERO ---- */
-  .hero {
-    min-height: 100vh;
-    background-color: #141414;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    position: relative;
-    padding: 40px 20px 120px;
-    overflow: hidden;
-  }
-
-  .hero-bg {
-    position: absolute;
-    inset: 0;
-    background: 
-      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(245,200,66,0.08) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(232,69,69,0.06) 0%, transparent 60%);
-  }
-
-  .rat-parade {
-    font-size: clamp(60px, 15vw, 140px);
-    line-height: 1;
-    letter-spacing: -2px;
-    animation: ratParade 1s ease;
-    position: relative;
-    z-index: 2;
-  }
-
-  .rat-parade span { display: inline-block; }
-
-  @keyframes ratParade {
-    from { opacity: 0; transform: translateY(-30px) rotate(-3deg); }
-    to { opacity: 1; transform: translateY(0) rotate(0deg); }
-  }
-
-  .title-main {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(80px, 20vw, 200px);
-    line-height: 0.85;
-    color: var(--cheese);
-    letter-spacing: 4px;
-    position: relative;
-    z-index: 2;
-    text-shadow: 
-      6px 6px 0px var(--cheese-dark),
-      12px 12px 0px rgba(0,0,0,0.3);
-    animation: titleDrop 0.8s ease 0.2s both;
-  }
-
-  @keyframes titleDrop {
-    from { opacity: 0; transform: scale(1.1); }
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  .title-sub {
-    font-family: 'Space Mono', monospace;
-    font-size: clamp(12px, 3vw, 18px);
-    color: #ffffff;
-    letter-spacing: 8px;
-    text-transform: uppercase;
-    margin-top: 16px;
-    position: relative;
-    z-index: 2;
-    animation: fadeUp 0.8s ease 0.5s both;
-  }
-
-  .hero-tagline {
-    font-family: 'Space Mono', monospace;
-    font-style: italic;
-    font-size: clamp(14px, 2.5vw, 20px);
-    color: #ffffff;
-    margin-top: 32px;
-    max-width: 500px;
-    line-height: 1.6;
-    position: relative;
-    z-index: 2;
-    animation: fadeUp 0.8s ease 0.7s both;
-  }
-
-  .hero-date {
-    margin-top: 40px;
-    position: relative;
-    z-index: 2;
-    animation: fadeUp 0.8s ease 0.9s both;
-  }
-
-  .date-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(245,200,66,0.12);
-    border: 1px solid rgba(245,200,66,0.3);
-    border-radius: 100px;
-    padding: 12px 28px;
-    font-family: 'Space Mono', monospace;
-    font-size: 14px;
-    color: #ffffff;
-    letter-spacing: 2px;
-  }
-
-  .scroll-hint {
-    position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 3px;
-    animation: bounce 2s ease infinite;
-  }
-
-  .scroll-arrow {
-    width: 1px;
-    height: 40px;
-    background: linear-gradient(to bottom, var(--cheese), transparent);
-  }
-
-  @keyframes bounce {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(8px); }
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ---- SECTIONS ---- */
-  section {
-    padding: 80px 24px;
-    max-width: 900px;
-    margin: 0 auto;
-  }
+  /* LAYOUT */
+  .wrap { max-width:860px; margin:0 auto; padding:0 20px; }
+  .section { padding:36px 0; }
+  .divider { height:1px; background:var(--border); }
 
   .section-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 6px;
-    color: var(--cheese);
-    text-transform: uppercase;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    font-family:'Space Mono',monospace; font-size:10px; letter-spacing:6px;
+    color:var(--cheese); text-transform:uppercase; margin-bottom:12px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .section-label::after { content:''; flex:1; height:1px; background:linear-gradient(to right,var(--cheese),transparent); }
+  .section-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(40px,9vw,76px); line-height:0.9; color:var(--black); margin-bottom:24px; }
+  .section-title em { font-style:normal; color:var(--cheese); }
+
+  /* AT A GLANCE — HERO EXPLAINER */
+  .hero-block {
+    background:var(--black); padding:40px 20px 32px; text-align:center;
+  }
+  .hero-eyebrow { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:4px; color:#888; text-transform:uppercase; margin-bottom:8px; }
+  .hero-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(48px,12vw,96px); color:var(--cheese); line-height:0.85; letter-spacing:3px; }
+  .hero-names { display:flex; gap:14px; justify-content:center; align-items:center; margin:16px 0 12px; flex-wrap:wrap; }
+  .hero-name { font-family:'Bebas Neue',sans-serif; font-size:clamp(20px,5vw,34px); letter-spacing:4px; color:#fff; }
+  .hero-amp { font-family:'Space Mono',monospace; font-size:16px; color:#555; }
+  .hero-tagline { font-family:'Space Mono',monospace; font-style:italic; font-size:clamp(12px,2.5vw,16px); color:#aaa; line-height:1.6; margin-top:8px; }
+
+  .hero-address-block {
+    background:var(--cheese); padding:14px 20px; margin:20px auto 0;
+    max-width:480px; display:flex; align-items:center; gap:14px;
+    clip-path:polygon(8px 0%,100% 0%,calc(100%-8px) 100%,0% 100%);
+  }
+  .hero-address-icon { font-size:22px; flex-shrink:0; }
+  .hero-address-text { font-family:'Space Mono',monospace; font-size:12px; color:var(--black); letter-spacing:1px; line-height:1.6; text-align:left; }
+  .hero-address-text strong { display:block; font-size:14px; letter-spacing:2px; }
+
+  /* HOW THE DAY WORKS — visual steps */
+  .steps-grid {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:2px; margin-top:8px;
+  }
+  .step-card {
+    background:var(--grime); padding:24px 18px; text-align:center; position:relative;
+  }
+  .step-card::after {
+    content:'→'; position:absolute; right:-12px; top:50%;
+    transform:translateY(-50%); font-family:'Bebas Neue',sans-serif;
+    font-size:22px; color:#333; z-index:1;
+  }
+  .step-card:last-child::after { display:none; }
+  .step-time { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--cheese); margin-bottom:6px; }
+  .step-icon { font-size:32px; margin-bottom:8px; }
+  .step-label { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:#fff; margin-bottom:4px; }
+  .step-note { font-size:11px; color:#666; line-height:1.5; }
+  @media(max-width:600px){
+    .steps-grid { grid-template-columns:1fr 1fr; }
+    .step-card::after { display:none; }
   }
 
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, rgba(245,200,66,0.3), transparent);
+  /* HOW CHALLENGES WORK — visual tier cards */
+  .challenge-intro { margin-top:8px; }
+  .ch-how { font-size:15px; color:#555; line-height:1.8; margin-bottom:28px; max-width:560px; }
+  .tier-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:32px; }
+  .tier-card {
+    border:2px solid var(--border); padding:18px 14px; text-align:center; border-radius:4px;
+    transition:transform 0.15s;
   }
-
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(48px, 10vw, 90px);
-    line-height: 0.9;
-    color: #F0E6C8;
-    margin-bottom: 32px;
+  .tier-card:hover { transform:translateY(-3px); }
+  .tier-card.t1 { border-color:#F5C842; background:#fffbeb; }
+  .tier-card.t2 { border-color:#F5A622; background:#fff8f0; }
+  .tier-card.t3 { border-color:#E8672A; background:#fff5f0; }
+  .tier-card.t4 { border-color:var(--accent); background:#fff0f0; }
+  .tier-card.t50 { border-color:var(--black); background:var(--black); }
+  .tier-pts { font-family:'Bebas Neue',sans-serif; font-size:36px; line-height:1; margin-bottom:4px; color:var(--black); }
+  .tier-card.t50 .tier-pts { color:var(--cheese); }
+  .tier-pts span { font-size:16px; }
+  .tier-label { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; color:#888; margin-bottom:8px; }
+  .tier-card.t50 .tier-label { color:#555; }
+  .tier-examples { font-size:11px; color:#666; line-height:1.6; }
+  .tier-card.t50 .tier-examples { color:#888; }
+  .ch-send-note {
+    background:var(--grime); border-left:4px solid var(--cheese);
+    padding:18px 20px; margin-top:4px;
+    font-family:'Space Mono',monospace; font-size:12px; color:var(--cheese);
+    letter-spacing:1px; line-height:1.8;
   }
-
-  .section-title em {
-    font-style: normal;
-    color: var(--cheese);
-  }
-
-  /* ---- CONCEPT ---- */
-  .concept-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2px;
-    margin-top: 48px;
-  }
-
-  @media (max-width: 600px) {
-    .concept-grid { grid-template-columns: 1fr; }
-  }
-
-  .concept-card {
-    background: #1e1e1e;
-    padding: 36px 28px;
-    position: relative;
-    overflow: hidden;
-    transition: background 0.3s ease;
-  }
-
-  .concept-card:hover { background: #252525; }
-
-  .concept-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--cheese);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-
-  .concept-card:hover::before { transform: scaleX(1); }
-
-  .card-emoji {
-    font-size: 40px;
-    margin-bottom: 16px;
-    display: block;
-  }
-
-  .card-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 2px;
-    color: var(--cheese);
-    margin-bottom: 12px;
-  }
-
-  .card-body {
-    font-size: 15px;
-    line-height: 1.7;
-    color: #aaa;
-  }
-
-  /* ---- RULES ---- */
-  .rules-section {
-    background: #1e1e1e;
-    border-left: 4px solid var(--cheese);
-    padding: 60px;
-    margin: 0 -24px;
-  }
-
-  @media (max-width: 600px) {
-    .rules-section { padding: 40px 24px; }
-  }
-
-  .rules-list {
-    margin-top: 40px;
-    counter-reset: rules;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .rule-item {
-    counter-increment: rules;
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    gap: 24px;
-    align-items: start;
-    padding: 28px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    position: relative;
-  }
-
-  .rule-item:last-child { border-bottom: none; }
-
-  .rule-number {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 56px;
-    color: rgba(245,200,66,0.15);
-    line-height: 1;
-  }
-
-  .rule-content { padding-top: 8px; }
-
-  .rule-title {
-    font-family: 'Space Mono', monospace;
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--cheese);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  .rule-body {
-    font-size: 15px;
-    line-height: 1.7;
-    color: #aaa;
-  }
-
-  .rule-body strong { color: #F0E6C8; }
-
-  /* ---- BIRTHDAY GIRLS ---- */
-  .bday-section {
-    text-align: center;
-    padding: 100px 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .bday-section::before {
-    content: '🐀🐀🐀🐀🐀🐀🐀🐀🐀🐀';
-    position: absolute;
-    top: 20px;
-    left: 0; right: 0;
-    font-size: 60px;
-    opacity: 0.04;
-    letter-spacing: 20px;
-    pointer-events: none;
-  }
-
-  .bday-names {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(60px, 16vw, 150px);
-    line-height: 0.85;
-    color: var(--cheese);
-    text-shadow: 4px 4px 0 var(--cheese-dark);
-    position: relative;
-    z-index: 2;
-  }
-
-  .bday-names .and {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.25em;
-    color: var(--muted);
-    display: block;
-    letter-spacing: 8px;
-    text-shadow: none;
-  }
-
-  .bday-sub {
-    font-family: 'Space Mono', monospace;
-    font-style: italic;
-    font-size: clamp(14px, 2.5vw, 18px);
-    color: #888;
-    margin-top: 24px;
-    line-height: 1.6;
-    position: relative;
-    z-index: 2;
-  }
-
-  .rat-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--cheese);
-    color: #141414;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px;
-    letter-spacing: 3px;
-    padding: 14px 32px;
-    margin-top: 32px;
-    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-    position: relative;
-    z-index: 2;
-  }
-
-  /* ---- PUBS ZONE ---- */
-  .pubs-container {
-    margin-top: 48px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .pub-row {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    background: #1e1e1e;
-    padding: 20px 28px;
-    transition: all 0.2s ease;
-    cursor: default;
-  }
-
-  .pub-row:hover {
-    background: #252525;
-    transform: translateX(6px);
-  }
-
-  .pub-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px;
-    color: rgba(245,200,66,0.2);
-    width: 40px;
-    flex-shrink: 0;
-  }
-
-  .pub-name {
-    font-family: 'Space Mono', monospace;
-    font-size: 14px;
-    font-weight: 700;
-    color: #F0E6C8;
-    flex: 1;
-  }
-
-  .pub-vibe {
-    font-size: 13px;
-    color: var(--muted);
-    text-align: right;
-    font-style: italic;
-  }
-
-  /* ---- CLUE FORMAT ---- */
-  .clue-box {
-    background: #1e1e1e;
-    border: 1px solid rgba(245,200,66,0.2);
-    padding: 40px;
-    margin-top: 48px;
-    position: relative;
-  }
-
-  .clue-box::before {
-    content: 'SAMPLE CLUE';
-    position: absolute;
-    top: -11px;
-    left: 24px;
-    background: #141414 !important;
-    padding: 0 12px;
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 4px;
-    color: var(--cheese);
-  }
-
-  .clue-text {
-    font-family: 'Space Mono', monospace;
-    font-style: italic;
-    font-size: clamp(18px, 4vw, 28px);
-    line-height: 1.5;
-    color: #F0E6C8;
-    text-align: center;
-  }
-
-  .clue-answer {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 13px;
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-  }
-
-  /* ---- FORFEIT SECTION ---- */
-  .forfeit-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 2px;
-    margin-top: 48px;
-  }
-
-  .forfeit-card {
-    background: #1e1e1e;
-    padding: 28px 24px;
-    position: relative;
-    overflow: hidden;
-    transition: background 0.2s ease;
-  }
-
-  .forfeit-card:hover { background: #252525; }
-
-  .forfeit-emoji {
-    font-size: 32px;
-    margin-bottom: 12px;
-    display: block;
-  }
-
-  .forfeit-text {
-    font-size: 14px;
-    color: #aaa;
-    line-height: 1.6;
-  }
-
-  .forfeit-text strong {
-    display: block;
-    color: #F0E6C8;
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-
-  /* ---- NIGHT TIMELINE ---- */
-  .timeline {
-    margin-top: 48px;
-    position: relative;
-    padding-left: 40px;
-  }
-
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 11px;
-    top: 0; bottom: 0;
-    width: 2px;
-    background: linear-gradient(to bottom, var(--cheese), transparent);
-  }
-
-  .timeline-item {
-    position: relative;
-    margin-bottom: 40px;
-  }
-
-  .timeline-item::before {
-    content: '';
-    position: absolute;
-    left: -34px;
-    top: 6px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--cheese);
-    box-shadow: 0 0 0 4px #141414, 0 0 0 6px rgba(245,200,66,0.2);
-  }
-
-  .timeline-time {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--cheese);
-    letter-spacing: 3px;
-    margin-bottom: 8px;
-  }
-
-  .timeline-event {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 2px;
-    color: #F0E6C8;
-    margin-bottom: 6px;
-  }
-
-  .timeline-desc {
-    font-size: 14px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-
-  /* ---- RSVP CTA ---- */
-  .cta-section {
-    background: var(--cheese);
-    padding: 80px 40px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .cta-section::before {
-    content: '🧀🐀🧀🐀🧀🐀🧀🐀🧀🐀';
-    position: absolute;
-    top: 0; right: 0; bottom: 0; left: 0;
-    display: flex;
-    align-items: center;
-    font-size: 100px;
-    opacity: 0.05;
-    pointer-events: none;
-    letter-spacing: 20px;
-    overflow: hidden;
-  }
-
-  .cta-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(48px, 12vw, 100px);
-    color: #141414;
-    line-height: 0.9;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 2;
-  }
-
-  .cta-body {
-    font-family: 'Space Mono', monospace;
-    font-size: 14px;
-    color: rgba(20,20,20,0.7);
-    line-height: 1.7;
-    max-width: 440px;
-    margin: 0 auto 40px;
-    position: relative;
-    z-index: 2;
-  }
-
-  .cta-button {
-    display: inline-block;
-    background: #141414 !important;
-    color: var(--cheese);
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 24px;
-    letter-spacing: 4px;
-    padding: 18px 48px;
-    text-decoration: none;
-    position: relative;
-    z-index: 2;
-    transition: all 0.2s ease;
-    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-  }
-
-  .cta-button:hover {
-    background: #111;
-    transform: translateY(-3px);
-  }
-
-  /* ---- FOOTER ---- */
-  footer {
-    padding: 40px 24px;
-    text-align: center;
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: #444;
-    letter-spacing: 2px;
-  }
-
-  footer span { color: var(--cheese); }
-
-  /* Marquee */
-  .marquee-wrap {
-    overflow: hidden;
-    background: var(--cheese);
-    padding: 14px 0;
-    white-space: nowrap;
-  }
-
-  .marquee-inner {
-    display: inline-block;
-    animation: marquee 20s linear infinite;
-  }
-
-  .marquee-inner span {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px;
-    letter-spacing: 6px;
-    color: #141414;
-    margin-right: 60px;
-  }
-
-  @keyframes marquee {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-
-  /* Divider */
-  .cheese-divider {
-    text-align: center;
-    font-size: 28px;
-    letter-spacing: 16px;
-    opacity: 0.15;
-    padding: 0 24px;
-  }
-
-  /* highlight tag */
-  .tag {
-    display: inline-block;
-    background: rgba(245,200,66,0.15);
-    border: 1px solid rgba(245,200,66,0.25);
-    color: var(--cheese);
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 3px;
-    padding: 4px 12px;
-    text-transform: uppercase;
-    border-radius: 2px;
-    margin-bottom: 8px;
-  }
-
-  .warning-box {
-    background: rgba(232,69,69,0.08);
-    border: 1px solid rgba(232,69,69,0.25);
-    padding: 20px 24px;
-    margin-top: 24px;
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    color: #E84545;
-    line-height: 1.6;
-  }
-
-  .warning-box strong { display: block; margin-bottom: 4px; }
-
-  @media (max-width: 600px) {
-    .rules-list { gap: 0; }
-    .rule-item { grid-template-columns: 40px 1fr; }
-    .rule-number { font-size: 40px; }
-    .concept-card, .pub-row, .forfeit-card { padding: 24px 20px; }
-  }
+  .ch-send-note span { color:#aaa; display:block; font-size:11px; margin-top:4px; }
+
+  /* FAQ */
+  .faq-list { display:flex; flex-direction:column; gap:2px; }
+  .faq-item { background:#f8f8f6; overflow:hidden; }
+  .faq-header { display:flex; justify-content:space-between; align-items:center; padding:18px 20px; cursor:pointer; gap:16px; transition:background 0.15s; }
+  .faq-header:hover { background:#f0f0ec; }
+  .faq-header.open { background:#fffbeb; border-bottom:1px solid #f0d060; }
+  .faq-q { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:#111; line-height:1.4; }
+  .faq-arrow { color:var(--cheese); font-size:12px; transition:transform 0.2s; flex-shrink:0; }
+  .faq-arrow.open { transform:rotate(180deg); }
+  .faq-body { display:none; padding:16px 20px; background:#fff; font-size:14px; color:#555; line-height:1.8; border-top:1px solid var(--border); }
+  .faq-body.open { display:block; }
+  .faq-body strong { color:#111; }
+
+  /* MAP */
+  #pub-map { width:100%; height:440px; border:2px solid var(--cheese); border-radius:2px; }
+
+  /* PUB ACCORDION */
+  .pub-accordion { margin-top:10px; background:#f8f8f6; }
+  .pub-acc-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; cursor:pointer; transition:background 0.15s; font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:3px; color:var(--cheese); text-transform:uppercase; }
+  .pub-acc-header:hover { background:#f0f0ec; }
+  .pub-acc-body { display:none; }
+  .pub-acc-body.open { display:block; }
+  .pub-row { display:flex; align-items:center; gap:16px; padding:13px 20px; border-top:1px solid var(--border); font-size:13px; color:#333; transition:all 0.15s; }
+  .pub-row:hover { background:#fffbeb; transform:translateX(4px); }
+  .pub-num { font-family:'Bebas Neue',sans-serif; font-size:24px; color:rgba(245,200,66,0.5); width:32px; flex-shrink:0; }
+  .pub-name { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:#111; }
+
+  /* RULES dark section */
+  .rules-dark { background:var(--black); padding:0 20px; }
+  .rules-wrap { max-width:860px; margin:0 auto; padding:56px 0; }
+  .rules-list { margin-top:32px; display:flex; flex-direction:column; gap:0; }
+  .rule-item { display:grid; grid-template-columns:56px 1fr; gap:20px; align-items:start; padding:24px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .rule-item:last-child { border-bottom:none; }
+  .rule-number { font-family:'Bebas Neue',sans-serif; font-size:52px; color:rgba(245,200,66,0.12); line-height:1; }
+  .rule-content { padding-top:6px; }
+  .rule-title { font-family:'Space Mono',monospace; font-weight:700; font-size:11px; color:var(--cheese); letter-spacing:3px; text-transform:uppercase; margin-bottom:6px; }
+  .rule-body { font-size:14px; line-height:1.7; color:#888; }
+  .rule-body strong { color:#F0E6C8; }
+  @media(max-width:500px){ .rule-item{grid-template-columns:40px 1fr;} .rule-number{font-size:38px;} }
+
+  /* CHALLENGE ACCORDIONS */
+  .ch-accordion { background:#f8f8f6; margin-bottom:2px; overflow:hidden; }
+  .ch-header { display:flex; justify-content:space-between; align-items:center; padding:18px 20px; cursor:pointer; transition:background 0.15s; user-select:none; }
+  .ch-header:hover { background:#f0f0ec; }
+  .ch-header.open { background:#fffbeb; border-bottom:1px solid #f0d060; }
+  .ch-title { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; color:#111; }
+  .ch-meta { display:flex; gap:8px; align-items:center; }
+  .pts-badge { background:var(--cheese); color:var(--black); font-family:'Space Mono',monospace; font-weight:700; font-size:11px; padding:4px 12px; clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%); }
+  .pts-badge.epic { background:var(--black); color:var(--cheese); }
+  .ch-arrow { color:var(--cheese); font-size:12px; transition:transform 0.2s; flex-shrink:0; }
+  .ch-arrow.open { transform:rotate(180deg); }
+  .ch-body { display:none; }
+  .ch-body.open { display:block; }
+  .ch-row { display:flex; gap:16px; align-items:flex-start; padding:16px 20px; border-top:1px solid var(--border); }
+  .ch-row:nth-child(even) { background:#fff; }
+  .ch-name { font-family:'Space Mono',monospace; font-weight:700; font-size:11px; color:var(--cheese); letter-spacing:1px; text-transform:uppercase; display:block; margin-bottom:4px; }
+  .ch-desc { font-size:13px; color:#555; line-height:1.7; }
+
+  /* CANT MAKE IT */
+  .late-dark { background:var(--black); padding:0 20px; }
+  .late-wrap { max-width:860px; margin:0 auto; padding:56px 0; }
+  .late-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(38px,8vw,68px); color:#F0E6C8; line-height:0.9; margin-bottom:16px; }
+  .late-title em { font-style:normal; color:var(--cheese); }
+  .late-body { font-size:15px; color:#888; line-height:1.8; max-width:480px; }
+  .late-body strong { color:#F0E6C8; }
+  .late-btn { display:inline-block; margin-top:22px; background:var(--cheese); color:var(--black); font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:3px; padding:14px 36px; text-decoration:none; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); transition:transform 0.15s; }
+  .late-btn:hover { transform:translateY(-2px); }
+
+  /* BIRTHDAY GIRLS */
+  .bday-block { background:var(--black); padding:80px 20px; text-align:center; position:relative; overflow:hidden; }
+  .bday-block::before { content:'🐀🧀🐀🧀🐀🧀🐀🧀🐀🧀'; position:absolute; top:20px; left:0; right:0; font-size:56px; opacity:0.04; letter-spacing:18px; pointer-events:none; }
+  .bday-names { font-family:'Bebas Neue',sans-serif; font-size:clamp(48px,13vw,120px); line-height:0.85; color:var(--cheese); text-shadow:4px 4px 0 var(--cheese-dark); position:relative; z-index:2; }
+  .bday-and { font-family:'Space Mono',monospace; font-size:0.22em; color:var(--muted); display:block; letter-spacing:8px; text-shadow:none; }
+  .bday-sub { font-family:'Space Mono',monospace; font-style:italic; font-size:14px; color:#aaa; margin-top:18px; position:relative; z-index:2; letter-spacing:1px; }
+  .bday-msg { font-size:15px; color:#888; line-height:1.8; max-width:400px; margin:18px auto 0; position:relative; z-index:2; }
+  .bday-img { width:100%; max-width:320px; margin:28px auto 0; display:block; position:relative; z-index:2; mix-blend-mode:lighten; }
+
+  /* CTA */
+  .cta-block { background:var(--cheese); padding:72px 20px; text-align:center; position:relative; overflow:hidden; }
+  .cta-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(48px,12vw,96px); color:var(--black); line-height:0.9; margin-bottom:14px; position:relative; z-index:2; }
+  .cta-body { font-family:'Space Mono',monospace; font-size:12px; color:rgba(0,0,0,0.55); line-height:1.8; max-width:400px; margin:0 auto; position:relative; z-index:2; }
+
+  /* FOOTER */
+  footer { padding:32px 20px; text-align:center; font-family:'Space Mono',monospace; font-size:11px; color:#999; letter-spacing:2px; background:var(--black); }
 </style>
 </head>
 <body>
 
-<div class="cursor" id="cursor">🧀</div>
+<!-- HEADER -->
+<div class="site-header">
+  <div class="hdr-left">
+    <h1>🐀 THE RAT RACE</h1>
+    <p>28 MARCH 2026 · ANGEL, ISLINGTON</p>
+  </div>
+  <a href="https://maps.app.goo.gl/1GUWiuV61bukFLN79" target="_blank" class="gmaps-hdr">🗺️ PUB MAP</a>
+</div>
+
+<!-- COUNTDOWN -->
+<div class="countdown-bar">
+  <span class="cd-label" id="cd-label">Race starts in</span>
+  <span class="cd-timer" id="countdown">--:--:--</span>
+  <span class="race-status"><span class="status-dot" id="status-dot"></span><span id="status-text">LOADING</span></span>
+</div>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="hero-bg"></div>
-  <div class="rat-parade">🐀</div>
-  <p style="font-family:'Space Mono',monospace; font-size:clamp(11px,2vw,14px); letter-spacing:4px; color:#888; text-transform:uppercase; margin-bottom:16px;">You're invited to the</p>
-  <h1 class="title-main">RAT RACE</h1>
-  <p class="title-sub">A Birthday Pub Crawl</p>
-  <div style="display:flex; gap:16px; justify-content:center; align-items:center; margin:24px 0 8px; flex-wrap:wrap;">
-    <span style="font-family:'Bebas Neue',sans-serif; font-size:clamp(22px,5vw,38px); letter-spacing:4px; color:#F5C842;">GEORGIA</span>
-    <span style="font-family:'Space Mono',monospace; font-size:18px; color:#555;">&amp;</span>
-    <span style="font-family:'Bebas Neue',sans-serif; font-size:clamp(22px,5vw,38px); letter-spacing:4px; color:#F5C842;">ALYSHA</span>
+<div class="hero-block">
+  <div style="font-family:'Space Mono',monospace;font-size:clamp(11px,2vw,14px);letter-spacing:6px;color:#888;text-transform:uppercase;margin-bottom:6px;position:relative;z-index:2;">THE</div>
+  <div class="hero-title" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,20vw,180px);line-height:0.85;color:var(--cheese);letter-spacing:4px;text-shadow:6px 6px 0px var(--cheese-dark),12px 12px 0px rgba(0,0,0,0.25);position:relative;z-index:2;">RAT RACE</div>
+  <div class="hero-names">
+    <span class="hero-name">GEORGIA</span>
+    <span class="hero-amp">&amp;</span>
+    <span class="hero-name">ALYSHA</span>
   </div>
-  <div class="hero-date">
-    <div class="date-pill">3pm  Saturday 28 March 2026  Angel, Islington</div>
+  <div class="hero-tagline">Two rats. One pot of money. Good luck finding them.</div>
+  <div class="hero-address-block" style="margin:20px auto 0;text-align:center;justify-content:center;">
+    <div class="hero-address-text" style="text-align:center;">
+      <strong>14 GASKIN ST, ANGEL, N1 2RU</strong>
+      Arrive from 2PM · Race starts 3PM
+    </div>
   </div>
-  <p class="hero-tagline">"Two rats. One pot of money. Good luck finding them."</p>
-  <div class="scroll-hint">
-    <span>SCROLL</span>
-    <div class="scroll-arrow"></div>
-  </div>
-</section>
+</div>
 
 <!-- MARQUEE -->
 <div class="marquee-wrap">
@@ -764,213 +272,370 @@
     <span>🐀 THE RAT RACE</span>
     <span>🧀 CHEESE OR DIE</span>
     <span>🐀 BIRTHDAY MAYHEM</span>
+    <span>🧀 THE RATS DON'T RUN THIS CITY</span>
+    <span>🐀 WE DO</span>
     <span>🧀 ANGEL IS THE SEWER</span>
-    <span>🐀 THE RATS DON'T RUN THIS CITY</span>
-    <span>🧀 WE DO</span>
     <span>🐀 NO RATS LEFT BEHIND</span>
     <span>🧀 THE RAT RACE</span>
     <span>🐀 CHEESE OR DIE</span>
     <span>🧀 BIRTHDAY MAYHEM</span>
+    <span>🐀 THE RATS DON'T RUN THIS CITY</span>
+    <span>🧀 WE DO</span>
     <span>🐀 ANGEL IS THE SEWER</span>
-    <span>🧀 THE RATS DON'T RUN THIS CITY</span>
-    <span>🐀 WE DO</span>
     <span>🧀 NO RATS LEFT BEHIND</span>
   </div>
 </div>
 
-<!-- CONCEPT -->
-<div style="max-width:900px; margin: 0 auto;">
-<section style="padding-bottom:20px;">
-  <div class="section-label">Angel, London</div>
-  <h2 class="section-title">A birthday <em>pub crawl</em></h2>
-  <p style="font-size:17px; color:#aaa; line-height:1.8; max-width:620px;">
-    You've heard of Chase the Chicken — but introducing the Rat Race. A birthday pub crawl where the birthday girls dress as rats, take everyone's cash and scurry off into the depths of Angel. Your job? Hunt them down. Every wrong pub costs you a drink or challenge, and the sooner you find them, the more of the pot you get to drink. Meet at 3PM for pres, collect the pot, and let the race begin.
-  </p>
-
-  <div class="concept-grid">
-    <div class="concept-card">
-      <span class="card-emoji">🐀</span>
-      <div class="card-title">The Rats</div>
-      <div class="card-body">Georgia &amp; Alysha. They put on the ears. They take the pot. They get a 20-minute head start. They scurry off into Angel and drink for free — for as long as it takes everyone to find them.</div>
+<!-- HOW THE DAY WORKS -->
+<div class="wrap">
+<div class="section">
+  <div class="section-label">The Rat Race</div>
+  <h2 class="section-title">The day at <em>a glance</em></h2>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-time">2:00PM</div>
+      <div class="step-icon">🏠</div>
+      <div class="step-label">MEET UP</div>
+      <div class="step-note">Casey & Tom's, 14 Gaskin St N1 2RU. BYO drinks, light snacks provided.</div>
     </div>
-    <div class="concept-card">
-      <span class="card-emoji">🧀</span>
-      <div class="card-title">The Cheese</div>
-      <div class="card-body">The communal pot of cash the birthday girls are hiding with. Everyone wants it. No one knows where it is.</div>
+    <div class="step-card">
+      <div class="step-time">2:40PM</div>
+      <div class="step-icon">🐀</div>
+      <div class="step-label">RATS FLEE</div>
+      <div class="step-note">Birthday girls take the pot and vanish into Angel.</div>
     </div>
-    <div class="concept-card">
-      <span class="card-emoji">🍺</span>
-      <div class="card-title">The Hunters</div>
-      <div class="card-body">Everyone else. Randomised teams. Racing around Upper Street trying to sniff out the rats. Hit a wrong pub? The whole team buys a drink or completes a challenge before they can leave.</div>
+    <div class="step-card">
+      <div class="step-time">3:00PM</div>
+      <div class="step-icon">🏁</div>
+      <div class="step-label">RACE ON</div>
+      <div class="step-note">Islington Green. Teams fan out. Wrong pub = drink.</div>
     </div>
-    <div class="concept-card">
-      <span class="card-emoji">🗺️</span>
-      <div class="card-title">The Chase Zone</div>
-      <div class="card-body">Angel's pubs. Enough to keep you guessing. All walkable. See the map below.</div>
+    <div class="step-card">
+      <div class="step-time">3PM–6PM</div>
+      <div class="step-icon">🔍</div>
+      <div class="step-label">THE HUNT</div>
+      <div class="step-note">Teams search pubs and complete challenges to earn points.</div>
+    </div>
+    <div class="step-card">
+      <div class="step-time">6:00PM</div>
+      <div class="step-icon">⏰</div>
+      <div class="step-label">RACE ENDS</div>
+      <div class="step-note">Race ends. Pub revealed. All roads lead to Canonbury.</div>
+    </div>
+    <div class="step-card">
+      <div class="step-time">6:30PM</div>
+      <div class="step-icon">🏆</div>
+      <div class="step-label">GLORY TIME</div>
+      <div class="step-note">Canonbury Tavern. Results, quiz, winners crowned, dinner.</div>
     </div>
   </div>
-</section>
 </div>
-<!-- ========== PUB MAP ========== -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</div>
 
-<div style="max-width:900px; margin:0 auto; padding:0 24px;">
-<section style="padding:20px 0 80px;">
+
+<!-- ALL THE DETAILS / FAQ -->
+<div class="wrap">
+<div class="section">
+  <div class="section-label">All the Details</div>
+  <h2 class="section-title">Your questions, <em>answered</em></h2>
+  <div class="faq-list">
+    <div class="faq-item" id="faq0">
+      <div class="faq-header" onclick="toggleFaq('faq0')">
+        <span class="faq-q">📍 Where exactly is 14 Gaskin Street?</span>
+        <span class="faq-arrow" id="farr-faq0">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq0">
+        A 7 min walk from Angel tube station. Head up Upper Street, turn left on Gaskin St. <a href="https://www.google.com/maps/search/14+Gaskin+Street+Angel+London+N1" target="_blank" style="color:var(--cheese);">→ Open in Google Maps</a>
+      </div>
+    </div>
+    <div class="faq-item" id="faq1">
+      <div class="faq-header" onclick="toggleFaq('faq1')">
+        <span class="faq-q">🏠 How do I get into Casey & Tom's?</span>
+        <span class="faq-arrow" id="farr-faq1">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq1">
+        <div style="font-size:13px;color:#444;line-height:2;">
+          <strong style="display:block;margin-bottom:8px;">14 Gaskin St, Angel, N1 2RU</strong>
+          1. Head to the entrance of Gaskin St and find the <strong>black gate</strong><br>
+          2. Press the <strong>green button with the key icon</strong> and come through<br>
+          3. Once inside, <strong>buzz apartment 3</strong> (door on your right) on the intercom<br>
+          4. We're on the <strong>first floor</strong> — go straight ahead through the door
+        </div>
+      </div>
+    </div>
+    <div class="faq-item" id="faq2">
+      <div class="faq-header" onclick="toggleFaq('faq2')">
+        <span class="faq-q">🍽️ Should I eat before?</span>
+        <span class="faq-arrow" id="farr-faq2">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq2">Yes — you should have some lunch before you arrive. Light snacks at Casey & Tom's and you can order some dinner at Canonbury Tavern from 6:30PM.</div>
+    </div>
+    <div class="faq-item" id="faq3">
+      <div class="faq-header" onclick="toggleFaq('faq3')">
+        <span class="faq-q">🍺 Should I BYO drinks?</span>
+        <span class="faq-arrow" id="farr-faq3">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq3">Yes! BYO is welcome for pres at Casey & Tom's from 2PM. Once the race starts you'll be buying at pubs.</div>
+    </div>
+    <div class="faq-item" id="faq5">
+      <div class="faq-header" onclick="toggleFaq('faq5')">
+        <span class="faq-q">🐀 What is a Babybel and why does my team have one?</span>
+        <span class="faq-arrow" id="farr-faq5">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq5">Each team gets a Babybel as their mascot. You decorate it at pres, your team must protect it all day and feature it in several challenges. <strong>Do not lose your Babybel... or else.</strong></div>
+    </div>
+    <div class="faq-item" id="faq6">
+      <div class="faq-header" onclick="toggleFaq('faq6')">
+        <span class="faq-q">📱 Location sharing — yes or no?</span>
+        <span class="faq-arrow" id="farr-faq6">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq6"><strong>Turn it OFF.</strong> No location sharing with other teams.</div>
+    </div>
+    <div class="faq-item" id="faq7">
+      <div class="faq-header" onclick="toggleFaq('faq7')">
+        <span class="faq-q">🤝 Can I swap teams?</span>
+        <span class="faq-arrow" id="farr-faq7">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq7">You may not swap teams before the race starts — stay together and don't split up. After 30 minutes, if you run into another team, one member from each team must swap.</div>
+    </div>
+    <div class="faq-item" id="faq8">
+      <div class="faq-header" onclick="toggleFaq('faq8')">
+        <span class="faq-q">🍹 What drinks can I order?</span>
+        <span class="faq-arrow" id="farr-faq8">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq8">Every member of your team must order a drink at each pub. Water or soft drinks are allowed. Shots count as a drink (if you want).</div>
+    </div>
+    <div class="faq-item" id="faq9">
+      <div class="faq-header" onclick="toggleFaq('faq9')">
+        <span class="faq-q">⏰ What happens at 6PM?</span>
+        <span class="faq-arrow" id="farr-faq9">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq9">Race ends at 6PM regardless. Pub revealed to anyone who hasn't found the rats. Everyone heads to <strong>Canonbury Tavern, 21 Canonbury Place, N1 2NS</strong> for 6:30PM.</div>
+    </div>
+    <div class="faq-item" id="faq10">
+      <div class="faq-header" onclick="toggleFaq('faq10')">
+        <span class="faq-q">🧀 Questions on the day?</span>
+        <span class="faq-arrow" id="farr-faq10">▼</span>
+      </div>
+      <div class="faq-body" id="fbody-faq10">Message Casey or Cortnee. Don't ask the rats — they're in hiding. 🐀</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- HOW CHALLENGES WORK -->
+<div class="wrap">
+<div class="section">
+  <div class="section-label">Earn Points</div>
+  <h2 class="section-title"><em>Challenges</em></h2>
+  <p class="ch-how">Throughout the race your team can complete challenges to earn points. Do the challenge, get the evidence, send directly to Georgia &amp; Alysha. Points tallied at 6PM — winning team gets a prize.</p>
+  <p style="font-family:'Space Mono',monospace;font-size:10px;color:#bbb;letter-spacing:2px;margin:0 0 20px;">📸 ALL EVIDENCE SENT TO GEORGIA &amp; ALYSHA ON INSTAGRAM</p>
+
+  <div class="ch-accordion" id="ch1">
+    <div class="ch-header" onclick="toggleCh('ch1')"><span class="ch-title">1 Point</span><div class="ch-meta"><span class="pts-badge">🧀 ×1</span><span class="ch-arrow" id="charr-ch1">▼</span></div></div>
+    <div class="ch-body" id="chbody-ch1">
+      <div class="ch-row"><div><span class="ch-name">🐭 The Unspoken Offering</span><span class="ch-desc">Get a stranger to hold your Babybel and take a photo — they cannot ask why and you cannot explain</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🐭 The Creature Collab</span><span class="ch-desc">Find a pub cat, dog or any animal and get a photo with your Babybel</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🐭 Sneak &amp; Squeak</span><span class="ch-desc">Find the coolest/weirdest item in the pub that the birthday rats would like — send a picture to the rats</span></div></div>
+    </div>
+  </div>
+  <div class="ch-accordion" id="ch2">
+    <div class="ch-header" onclick="toggleCh('ch2')"><span class="ch-title">2 Points</span><div class="ch-meta"><span class="pts-badge">🧀 ×2</span><span class="ch-arrow" id="charr-ch2">▼</span></div></div>
+    <div class="ch-body" id="chbody-ch2">
+      <div class="ch-row"><div><span class="ch-name">📺 The Squeak League Finals</span><span class="ch-desc">Ask the bartender to change the TV to the "Rat Race" — convince them it's a major sporting event</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">💘 Cheesy Does It</span><span class="ch-desc">Deliver your best cheesy pick-up line to a stranger. Bonus points if you get their digits!</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🐭 The Cheese Compliment</span><span class="ch-desc">Give 3 strangers a heartfelt compliment while holding your Babybel like it's important (it is important!)</span></div></div>
+    </div>
+  </div>
+  <div class="ch-accordion" id="ch3">
+    <div class="ch-header" onclick="toggleCh('ch3')"><span class="ch-title">3 Points</span><div class="ch-meta"><span class="pts-badge">🧀 ×3</span><span class="ch-arrow" id="charr-ch3">▼</span></div></div>
+    <div class="ch-body" id="chbody-ch3">
+      <div class="ch-row"><div><span class="ch-name">🚶 Adopt-a-Rat</span><span class="ch-desc">Get a stranger to walk to the next pub with your team and stay for at least 5 minutes</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🪱 The Cheesequake</span><span class="ch-desc">A team member must attempt to do the worm on the pub floor</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">💃 Rat Shuffle</span><span class="ch-desc">Choreograph a rat-inspired dance routine — video evidence essential. Bonus points if everyone is shuffling!</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🫂 Hide &amp; Squeak</span><span class="ch-desc">Squeeze your whole group into the smallest space possible — send the photo to the birthday rats</span></div></div>
+    </div>
+  </div>
+  <div class="ch-accordion" id="ch4">
+    <div class="ch-header" onclick="toggleCh('ch4')"><span class="ch-title">4 Points — Legendary</span><div class="ch-meta"><span class="pts-badge" style="background:var(--accent);color:white;">🧀 ×4</span><span class="ch-arrow" id="charr-ch4">▼</span></div></div>
+    <div class="ch-body" id="chbody-ch4">
+      <div class="ch-row"><div><span class="ch-name">🎂 The Birthday Anthem</span><span class="ch-desc">Get everyone in the pub to sing happy birthday to Georgia &amp; Alysha — full performance, not just one line</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🐀 Is This Ratatouille?!</span><span class="ch-desc">Be someone else's arms in your group and help them to down their drink</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🐭 The Babybel Ballroom</span><span class="ch-desc">Get two strangers who don't know each other to slow dance with your Babybel nestled between them</span></div></div>
+      <div class="ch-row"><div><span class="ch-name">🐭 Cheese Clout</span><span class="ch-desc">Convince a stranger to put your Babybel on their Instagram story — must show you the post before you leave</span></div></div>
+    </div>
+  </div>
+  <div class="ch-accordion" id="ch5">
+    <div class="ch-header" onclick="toggleCh('ch5')"><span class="ch-title">50 Points — Are you serious?</span><div class="ch-meta"><span class="pts-badge epic">🏆 ×50</span><span class="ch-arrow" id="charr-ch5">▼</span></div></div>
+    <div class="ch-body" id="chbody-ch5">
+      <div class="ch-row"><div><span class="ch-name">💉 Ink-redible</span><span class="ch-desc">Get a tattoo of a rat during the race. Pre-existing rat tattoos will count. 🐀</span></div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+
+<!-- MAP -->
+<div class="wrap">
+<div class="section" style="padding-bottom:20px;">
   <div class="section-label">Angel's Pubs</div>
   <h2 class="section-title">The Chase <em>Zone</em></h2>
-  <p style="color:#888; font-size:15px; line-height:1.8; margin-bottom:8px;">These are the pubs in play. The rats can hide in any of them. Teams can search in any order. All walkable.</p>
-  <p style="font-family:'Space Mono',monospace; font-size:11px; color:#555; letter-spacing:2px; margin-bottom:32px;">PUB LIST STILL BEING FINALISED</p>
-  <div id="pub-map" style="width:100%; height:520px; border:2px solid #F5C842; border-radius:2px;"></div>
-  <p style="font-family:'Space Mono',monospace; font-size:11px; color:#555; margin-top:12px; letter-spacing:2px;">🍺 = PUB IN PLAY &nbsp;·&nbsp; YELLOW CIRCLE = THE CHASE ZONE</p>
-</section>
-</div>
-
-
-<!-- CTA -->
-<div class="cta-section">
-  <h2 class="cta-title">ARE YOU<br>IN?</h2>
-  <p class="cta-body">Saturday 28 March. Pres from 3pm. Transfer Casey £20 before the day for the rat pot.</p>
-  <div id="cta-interactive" style="margin-top:40px;">
-    <p style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:3px; color:#555; margin-bottom:24px;">FEED THE RAT TO CONFIRM YOU'RE COMING</p>
-    <div id="rat-game" style="position:relative; display:inline-block;">
-      <div id="rat-char" style="font-size:72px; line-height:1; cursor:pointer; transition:transform 0.15s ease; user-select:none; display:inline-block;" onclick="feedRat()" title="Feed the rat">🐀</div>
-      <div id="cheese-pieces" style="position:absolute; top:50%; left:50%; pointer-events:none;"></div>
+  <p style="font-size:14px;color:#888;margin-bottom:20px;line-height:1.8;">All walkable from Islington Green. Open in Google Maps for live navigation!</p>
+  <a href="https://maps.app.goo.gl/1GUWiuV61bukFLN79" target="_blank" class="gmaps-hdr" style="display:inline-block;margin-bottom:16px;">🗺️ VIEW PUBS IN GOOGLE MAPS</a>
+  <div id="pub-map"></div>
+  <div class="pub-accordion">
+    <div class="pub-acc-header" onclick="togglePubList()">
+      <span>📋 All Pubs in Play (27)</span>
+      <span id="pub-arr" style="color:var(--cheese);">▼</span>
     </div>
-    <div id="rat-prompt" style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#555; margin-top:16px;">↑ CLICK THE RAT</div>
-    <div id="rat-fed" style="display:none; margin-top:28px; animation: fadeUp 0.6s ease both;">
-      <div style="font-family:'Bebas Neue',sans-serif; font-size:clamp(32px,7vw,56px); letter-spacing:4px; color:#ffffff; line-height:1.1;">CAN'T WAIT<br>TO SEE YOU</div>
-      <div style="font-family:'Space Mono',monospace; font-size:13px; color:#888; margin-top:16px; letter-spacing:2px;">28 MARCH · ANGEL · 3PM 🐀🧀</div>
+    <div class="pub-acc-body" id="pub-list-body">
+      <div class="pub-row"><span class="pub-num">01</span><span class="pub-name">The Vineyard Islington</span></div>
+      <div class="pub-row"><span class="pub-num">02</span><span class="pub-name">Myddleton Arms</span></div>
+      <div class="pub-row"><span class="pub-num">03</span><span class="pub-name">The Foxglove Public House</span></div>
+      <div class="pub-row"><span class="pub-num">04</span><span class="pub-name">The Green Man</span></div>
+      <div class="pub-row"><span class="pub-num">05</span><span class="pub-name">The Regent, Islington</span></div>
+      <div class="pub-row"><span class="pub-num">06</span><span class="pub-name">King's Head</span></div>
+      <div class="pub-row"><span class="pub-num">07</span><span class="pub-name">The Alpaca</span></div>
+      <div class="pub-row"><span class="pub-num">08</span><span class="pub-name">The Crown, Islington</span></div>
+      <div class="pub-row"><span class="pub-num">09</span><span class="pub-name">The Bull</span></div>
+      <div class="pub-row"><span class="pub-num">10</span><span class="pub-name">The Old Queens Head</span></div>
+      <div class="pub-row"><span class="pub-num">11</span><span class="pub-name">Fox on the Green</span></div>
+      <div class="pub-row"><span class="pub-num">12</span><span class="pub-name">The Brougham</span></div>
+      <div class="pub-row"><span class="pub-num">13</span><span class="pub-name">The Angelic</span></div>
+      <div class="pub-row"><span class="pub-num">14</span><span class="pub-name">The York</span></div>
+      <div class="pub-row"><span class="pub-num">15</span><span class="pub-name">The Earl of Essex</span></div>
+      <div class="pub-row"><span class="pub-num">16</span><span class="pub-name">The Island Queen</span></div>
+      <div class="pub-row"><span class="pub-num">17</span><span class="pub-name">The Alma</span></div>
+      <div class="pub-row"><span class="pub-num">18</span><span class="pub-name">Narrowboat</span></div>
+      <div class="pub-row"><span class="pub-num">19</span><span class="pub-name">The Three Johns</span></div>
+      <div class="pub-row"><span class="pub-num">20</span><span class="pub-name">The Castle</span></div>
+      <div class="pub-row"><span class="pub-num">21</span><span class="pub-name">The Tamil Crown</span></div>
     </div>
   </div>
 </div>
+</div>
 
-<!-- FOOTER -->
+<!-- RULES DARK -->
+<div class="rules-dark">
+<div class="rules-wrap">
+  <div class="section-label" style="color:var(--cheese);">How to Play</div>
+  <h2 class="section-title" style="color:#F0E6C8;">The <em>Rules</em></h2>
+  <div class="rules-list">
+    <div class="rule-item"><div class="rule-number">01</div><div class="rule-content"><div class="rule-title">The Pot</div><div class="rule-body">Transfer <strong>£20 to Alysha</strong> before the day. Birthday girls take it, hide with it, and drink on it all night.</div></div></div>
+    <div class="rule-item"><div class="rule-number">02</div><div class="rule-content"><div class="rule-title">The Rats Disappear</div><div class="rule-body">Georgia &amp; Alysha get a <strong>20-minute head start</strong>. They pick any pub in the Angel chase zone. They go there. They sit. They drink. They <strong>cannot move</strong> once chosen.</div></div></div>
+    <div class="rule-item"><div class="rule-number">03</div><div class="rule-content"><div class="rule-title">The Chase</div><div class="rule-body">Teams fan out. Every pub you enter and the rats aren't there — every player must <strong>finish a whole drink</strong> before leaving (alcoholic or non-alcoholic — shots count!). No sneaking out early.</div></div></div>
+    <div class="rule-item"><div class="rule-number">04</div><div class="rule-content"><div class="rule-title">No Transport</div><div class="rule-body"><strong>Walking only.</strong> No Lime Bikes, no buses, no taxis. If it has wheels, it doesn't count.</div></div></div>
+    <div class="rule-item"><div class="rule-number">05</div><div class="rule-content"><div class="rule-title">Stick Together</div><div class="rule-body">Teams must stay together at all times — <strong>no splitting up</strong>. No swapping teams once assigned.</div></div></div>
+    <div class="rule-item"><div class="rule-number">07</div><div class="rule-content"><div class="rule-title">Locations Off</div><div class="rule-body"><strong>Turn location sharing OFF</strong> for the entire race. No sharing your location with other teams.</div></div></div>
+    <div class="rule-item"><div class="rule-number">08</div><div class="rule-content"><div class="rule-title">Team Swap</div><div class="rule-body">After 30 minutes: if you run into another team, <strong>one member must swap</strong>. The opposing team gets to choose who they steal.</div></div></div>
+    <div class="rule-item"><div class="rule-number">09</div><div class="rule-content"><div class="rule-title">Clues</div><div class="rule-body">The rats will issue clues to the group chat based on how many teams have found them. <strong>More teams find them = fewer clues remaining.</strong></div></div></div>
+    <div class="rule-item"><div class="rule-number">10</div><div class="rule-content"><div class="rule-title">Race Ends at 6PM</div><div class="rule-body">Pub revealed to all remaining teams. Everyone converges on Canonbury Tavern by <strong>6:30PM.</strong></div></div></div>
+  </div>
+</div>
+</div>
+
+
+
+<!-- CANT MAKE IT -->
+<div style="background:#fff;padding:0 20px;">
+<div style="max-width:860px;margin:0 auto;padding:56px 0;">
+  <div class="section-label">After the Race</div>
+  <h2 class="section-title">Can't make <em>the Race?</em></h2>
+  <p style="font-size:15px;color:#555;line-height:1.8;max-width:480px;">No worries — join us at the <strong>Canonbury Tavern</strong> from 6:30PM.<br><br><strong>21 Canonbury Place, Islington, N1 2NS</strong><br><br>Challenge results, Cortnee's rat quiz, winners crowned and dinner.</p>
+  <a href="https://www.google.com/maps/search/Canonbury+Tavern+21+Canonbury+Place+Islington" target="_blank" style="display:inline-block;margin-top:22px;background:var(--black);color:var(--cheese);font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;padding:14px 36px;text-decoration:none;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:transform 0.15s;">📍 GET DIRECTIONS</a>
+</div>
+</div>
+
+<!-- BIRTHDAY GIRLS -->
+<div class="bday-block">
+  <div class="bday-names">
+    GEORGIA
+    <span class="bday-and">&amp;</span>
+    ALYSHA
+  </div>
+  <p class="bday-sub">28th & 30th March · Two birthdays · One sewer</p>
+  <p class="bday-msg">Tonight is for you both. Put on your ears, take the pot, and disappear into Angel.<br><br>We love you. 🐀🧀</p>
+</div>
+
+<!-- CTA -->
+<div class="cta-block">
+  <h2 class="cta-title">SEE YOU<br>SATURDAY</h2>
+  <p class="cta-body">28 March 2026 · 2PM at 14 Gaskin St, Angel<br>Race starts 3PM · Islington Green<br>£20 transferred to Alysha</p>
+</div>
+
 <footer>
-  <p>The Rat Race · Angel, London · 28 March 2026</p>
-  <p style="margin-top:8px; color:#444;">No rats were harmed in the making of this event</p>
+  THE RAT RACE · ANGEL, ISLINGTON · 28 MARCH 2026<br>
+  <span style="display:block;margin-top:6px;color:#666;">No rats were harmed in the making of this event 🐀</span>
 </footer>
 
 <script>
-  // Cursor
-  const cursor = document.getElementById('cursor');
-  document.addEventListener('mousemove', e => {
-    cursor.style.left = e.clientX + 'px';
-    cursor.style.top = e.clientY + 'px';
-  });
+  var obs=new IntersectionObserver(function(entries){entries.forEach(function(e,i){if(e.isIntersecting){e.target.style.animationDelay=(i*0.07)+'s';e.target.classList.add('vis');obs.unobserve(e.target);}});},{threshold:0.1});
+  var st=document.createElement('style');st.textContent='.vis{opacity:1!important;transform:none!important;}';document.head.appendChild(st);
+  document.querySelectorAll('.step-card,.tier-card,.rule-item,.faq-item,.ch-accordion,.pub-row').forEach(function(el){el.style.opacity='0';el.style.transform='translateY(14px)';el.style.transition='opacity 0.45s ease,transform 0.45s ease';obs.observe(el);});
 
-  // Stagger card animations on scroll
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        entry.target.style.animationDelay = (i * 0.08) + 's';
-        entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.concept-card, .pub-row, .timeline-item, .rule-item').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-    observer.observe(el);
-  });
-
-
-  // ---- PUB MAP ----
-  window.addEventListener('load', function() {
-    const pubs = [
-      { name: "The Island Queen", lat: 51.5395, lng: -0.1025 },
-      { name: "The Drapers Arms", lat: 51.5415, lng: -0.1068 },
-      { name: "The Charles Lamb", lat: 51.5388, lng: -0.1042 },
-      { name: "The Narrowboat", lat: 51.5358, lng: -0.1015 },
-      { name: "The Crown", lat: 51.5375, lng: -0.1052 },
-      { name: "The Albion", lat: 51.5405, lng: -0.1060 },
-      { name: "The Old Red Lion", lat: 51.5350, lng: -0.1060 },
-      { name: "Slim Jim's Liquor Store", lat: 51.5338, lng: -0.1055 },
-      { name: "The Gunmakers", lat: 51.5335, lng: -0.1042 },
-      { name: "The Camden Head", lat: 51.5348, lng: -0.1070 },
-      { name: "Hope & Anchor", lat: 51.5442, lng: -0.1040 },
-      { name: "The Foxglove", lat: 51.5370, lng: -0.1092 },
-      { name: "The Peacock", lat: 51.5325, lng: -0.1072 },
-      { name: "The York", lat: 51.5318, lng: -0.1055 },
-      { name: "The Pocket", lat: 51.5358, lng: -0.1005 },
-      { name: "The Bill Murray", lat: 51.5348, lng: -0.1020 },
-      { name: "The Alpaca", lat: 51.5398, lng: -0.0997 },
-      { name: "The Old Queen's Head", lat: 51.5408, lng: -0.0983 },
-      { name: "The Kings Head", lat: 51.5432, lng: -0.1038 },
-      { name: "Fox on the Green", lat: 51.5357, lng: -0.1047 },
-      { name: "The Bull", lat: 51.5412, lng: -0.1075 },
-    ];
-
-    const pubMap = L.map('pub-map', { zoomControl: true, scrollWheelZoom: false }).setView([51.5385, -0.1052], 14);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19
-    }).addTo(pubMap);
-    L.circle([51.5385, -0.1052], {
-      radius: 750, color: '#F5C842', fillColor: '#F5C842',
-      fillOpacity: 0.06, weight: 2, dashArray: '6 6'
-    }).addTo(pubMap);
-    const beerIcon = L.divIcon({
-      html: '<div style="font-size:24px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">🍺</div>',
-      className: '', iconSize: [30,30], iconAnchor: [15,15], popupAnchor: [0,-18]
-    });
-    pubs.forEach((pub, i) => {
-      L.marker([pub.lat, pub.lng], { icon: beerIcon })
-        .addTo(pubMap)
-        .bindPopup('<div style="font-family:Space Mono,monospace;font-size:13px;font-weight:700;color:#141414;">' + pub.name + '</div>', { className: 'rat-popup' });
-    });
-    const popupStyle = document.createElement('style');
-    popupStyle.textContent = '.rat-popup .leaflet-popup-content-wrapper{background:#F5C842;border-radius:2px;box-shadow:4px 4px 0 rgba(0,0,0,0.4)}.rat-popup .leaflet-popup-tip{background:#F5C842}';
-    document.head.appendChild(popupStyle);
-  });
-
-  // ---- RAT FEEDING ----
-  var feedCount = 0;
-  var fedDone = false;
-  function feedRat() {
-    if (fedDone) return;
-    feedCount++;
-    const rat = document.getElementById('rat-char');
-    const prompt = document.getElementById('rat-prompt');
-    // bounce animation
-    rat.style.transform = 'scale(1.3) rotate(-10deg)';
-    setTimeout(function(){ rat.style.transform = 'scale(1) rotate(0deg)'; }, 150);
-    // fling a cheese piece
-    const piece = document.createElement('div');
-    piece.textContent = '🧀';
-    piece.style.cssText = 'position:absolute;font-size:22px;pointer-events:none;transition:all 0.5s ease;top:0;left:0;';
-    document.getElementById('cheese-pieces').appendChild(piece);
-    const angle = Math.random() * 360;
-    const dist = 40 + Math.random() * 30;
-    const dx = Math.cos(angle) * dist;
-    const dy = Math.sin(angle) * dist;
-    setTimeout(function(){ piece.style.transform = 'translate('+dx+'px,'+dy+'px)'; piece.style.opacity='0'; }, 20);
-    setTimeout(function(){ piece.remove(); }, 520);
-    if (feedCount === 1) { prompt.textContent = 'MORE. FEED IT MORE.'; }
-    else if (feedCount === 2) { rat.textContent = '🐀'; prompt.textContent = 'THE RAT IS HUNGRY...'; }
-    else if (feedCount === 3) { rat.textContent = '🐀'; prompt.textContent = 'ALMOST THERE...'; }
-    else if (feedCount >= 4) {
-      fedDone = true;
-      rat.textContent = '🐀';
-      rat.style.transform = 'scale(1.2)';
-      prompt.style.display = 'none';
-      document.getElementById('rat-fed').style.display = 'block';
-    }
+  var MEET=new Date('2026-03-28T14:00:00'),RATS=new Date('2026-03-28T14:40:00'),
+      RACE=new Date('2026-03-28T15:00:00'),DEAD=new Date('2026-03-28T18:00:00');
+  function pad(n){return String(n).padStart(2,'0');}
+  function tick(){
+    var now=new Date(),dot=document.getElementById('status-dot'),
+        lbl=document.getElementById('cd-label'),tmr=document.getElementById('countdown'),sts=document.getElementById('status-text');
+    var target,label,active=false;
+    if(now<MEET){target=MEET;label='MEETUP IN';}
+    else if(now<RATS){target=RATS;label='RATS LEAVE IN';active=true;}
+    else if(now<RACE){target=RACE;label='RACE STARTS IN';active=true;}
+    else if(now<DEAD){var rem=DEAD-now,h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);tmr.textContent=pad(h)+':'+pad(m)+':'+pad(s);lbl.textContent='RACE ENDS IN';sts.textContent='RACE ON 🐀';dot.classList.add('active');return;}
+    else{tmr.textContent='RACE OVER';lbl.textContent='';sts.textContent='CANONBURY TAVERN 🍺';dot.classList.remove('active');return;}
+    var diff=target-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+    tmr.textContent=pad(h)+':'+pad(m)+':'+pad(s);lbl.textContent=label;
+    sts.textContent=active?'TODAY 🐀':'COMING SOON';
+    if(active)dot.classList.add('active');else dot.classList.remove('active');
   }
+  tick();setInterval(tick,1000);
 
-  // Add visible class styles
-  const style = document.createElement('style');
-  style.textContent = '.visible { opacity: 1 !important; transform: none !important; }';
-  document.head.appendChild(style);
+  function toggleFaq(id){var b=document.getElementById('fbody-'+id),h=document.querySelector('#'+id+' .faq-header'),a=document.getElementById('farr-'+id),o=b.classList.contains('open');b.classList.toggle('open',!o);h.classList.toggle('open',!o);a.classList.toggle('open',!o);}
+  function toggleCh(id){var b=document.getElementById('chbody-'+id),h=document.querySelector('#'+id+' .ch-header'),a=document.getElementById('charr-'+id),o=b.classList.contains('open');b.classList.toggle('open',!o);h.classList.toggle('open',!o);a.classList.toggle('open',!o);}
+  function togglePubList(){var b=document.getElementById('pub-list-body'),a=document.getElementById('pub-arr'),o=b.classList.contains('open');b.classList.toggle('open',!o);a.textContent=o?'▼':'▲';}
 
-
-
-
-
-
+  window.addEventListener('load',function(){
+    var pubs=[
+      {name:"The Castle",lat:51.5335,lng:-0.1065},
+      {name:"Be At One — Islington",lat:51.5345,lng:-0.1063},
+      {name:"Simmons Bar",lat:51.5373,lng:-0.1008},
+      {name:"Islington Townhouse",lat:51.5362,lng:-0.1062},
+      {name:"The Steam Passage",lat:51.5342,lng:-0.1058},
+      {name:"The Tamil Crown",lat:51.5388,lng:-0.1032},
+      {name:"The Green Man",lat:51.5360,lng:-0.1042},
+      {name:"Myddleton Arms",lat:51.5372,lng:-0.1028},
+      {name:"The Crown, Islington",lat:51.5375,lng:-0.1052},
+      {name:"The Foxglove Public House",lat:51.5370,lng:-0.1092},
+      {name:"The Regent, Islington",lat:51.5415,lng:-0.1055},
+      {name:"The Alma",lat:51.5388,lng:-0.1095},
+      {name:"The Three Johns",lat:51.5378,lng:-0.1078},
+      {name:"The Vineyard Islington",lat:51.5355,lng:-0.1038},
+      {name:"Narrowboat",lat:51.5358,lng:-0.1015},
+      {name:"The Island Queen",lat:51.5395,lng:-0.1025},
+      {name:"The Earl of Essex",lat:51.5375,lng:-0.1002},
+      {name:"The Angelic",lat:51.5362,lng:-0.1022},
+      {name:"The York",lat:51.5318,lng:-0.1055},
+      {name:"King's Head",lat:51.5432,lng:-0.1038},
+      {name:"The Old Queens Head",lat:51.5408,lng:-0.0983},
+      {name:"The Alpaca",lat:51.5398,lng:-0.0997},
+      {name:"The Kings",lat:51.5430,lng:-0.1045},
+      {name:"The Bull",lat:51.5412,lng:-0.1075},
+      {name:"Fox on the Green",lat:51.5357,lng:-0.1047},
+      {name:"The Brougham",lat:51.5345,lng:-0.1035},
+      {name:"Camden Head",lat:51.5348,lng:-0.1070}
+    ];
+    var map=L.map('pub-map',{zoomControl:true,scrollWheelZoom:false}).setView([51.538,-0.105],14);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:19}).addTo(map);
+    L.polygon([[51.5458,-0.1168],[51.5458,-0.0928],[51.5292,-0.1048]],{color:'#F5C842',weight:3,opacity:0.9,fillColor:'#F5C842',fillOpacity:0.08,interactive:false}).addTo(map);
+    [{lat:51.5443,lng:-0.1088,r:42},{lat:51.5443,lng:-0.0998,r:32},{lat:51.5423,lng:-0.1048,r:36},{lat:51.5413,lng:-0.1118,r:28},{lat:51.5408,lng:-0.0973,r:24},{lat:51.5393,lng:-0.1083,r:30},{lat:51.5383,lng:-0.1018,r:22},{lat:51.5363,lng:-0.1058,r:18},{lat:51.5348,lng:-0.1048,r:14}].forEach(function(h){L.circle([h.lat,h.lng],{color:'#F5C842',weight:2,opacity:0.8,fillOpacity:0,interactive:false,radius:h.r}).addTo(map);});
+    var icon=L.divIcon({html:'<div style="font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));">🍺</div>',className:'',iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-16]});
+    pubs.forEach(function(pub,i){L.marker([pub.lat,pub.lng],{icon:icon}).addTo(map).bindPopup('<div style="font-family:Space Mono,monospace;font-size:13px;font-weight:700;color:#141414;">#'+String(i+1).padStart(2,'0')+' '+pub.name+'</div><a href="https://www.google.com/maps/search/'+encodeURIComponent(pub.name+' Angel London')+'" target="_blank" style="font-family:Space Mono,monospace;font-size:11px;color:#F5C842;">→ Navigate</a>',{className:'rat-popup'});});
+    var ps=document.createElement('style');ps.textContent='.rat-popup .leaflet-popup-content-wrapper{background:#F5C842;border-radius:2px;box-shadow:4px 4px 0 rgba(0,0,0,0.4)}.rat-popup .leaflet-popup-tip{background:#F5C842}.rat-popup .leaflet-popup-content{margin:8px 14px;}';document.head.appendChild(ps);
+  });
 </script>
 </body>
 </html>
